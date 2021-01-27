@@ -1,39 +1,44 @@
 <script>
 
 	import Bookworm from 'bookworm-vega';
-	import search_limit_labels from 'bookworm-vega/src/search_limit_labels';
-	import Multiselect from "./Multiselect.svelte";
-	import Corpus from "./Corpus.svelte";
-	import { JSONEditor } from 'svelte-jsoneditor';
 	import TopBar from './TopBar.svelte';
+	import Aesthetics from './Aesthetics.svelte';
+	import Corpora from './Corpora.svelte';
 	import Button from '@smui/button';
-	export let bookworm = new Bookworm("#bookworm")
+	import Paper, {Title} from '@smui/paper';
+	import { Diamonds } from 'svelte-loading-spinners';
 	export let query;
-    import IconButton from '@smui/icon-button';
 
-	export let schema = [];
+	// Await a promise for basic bookworm data.
+	let initial_load = false;
+	let metrics;
 
-
-
+	export let schema = undefined;
+	
 	if (!window.location.hash) {
 		query = {
-		"plottype": "linechart",
-		"smoothingSpan": 0,
-		"database": "subtitles",
-		"words_collation": "Case_Sensitive",
-		"aesthetic": {
-			"x": "year",
-			"y": "WordsPerMillion"
-		},
-		"search_limits": [{
-			"word": ["terrible"]
-		},
-		{
-			"word": ["great"]
-		}]
-		}
+			"plottype": "linechart",
+			"smoothingSpan": 0,
+			"database": "subtitles",
+			"words_collation": "Case_Sensitive",
+			"aesthetic": {
+				"x": "date_year",
+				"y": "WordsPerMillion",
+				"color": "Search"
+			},
+			"search_limits": [{
+				"word": ["terrible"]
+			},
+			{
+				"word": ["great"]
+			}]
+			}
 	} else {
-		query = JSON.parse(decodeURI(window.location.hash))
+		query = JSON.parse(decodeURI(window.location.hash.slice(1)))
+		if (!query.search_limits.length) {
+			// For here, always bundle in a search.
+			query.search_limits = [query.search_limits]
+		}
 	}
 	if (!query.host) {
 		// Just for Ben, for now.
@@ -41,67 +46,72 @@
 		query = query
 	}
 
-	function clone_limit(i) {
-		console.log(i)
-		const new_copy = JSON.parse(JSON.stringify(query.search_limits[i]))
-		query.search_limits.splice(i + 1, 0, new_copy)
-		query = query
-	}
 
-	function remove_limit(i) {
-		query.search_limits.splice(i, 1)
-		query = query
-	}
-	
-	$: plot = bookworm.plotAPI(plot_query).then(() => {
+	export let bookworm = new Bookworm("#bookworm", query)
+
+	// wait for schema to be ready.
+	const first_draw = bookworm.schema.then(() => {
+		initial_load = true
 		schema = bookworm.schemas[bookworm.query.host + '-' + bookworm.query.database]
-	}) 
+		metrics = bookworm.metrics;
+		bookworm.plotAPI(query)
+	})
 
 	let misaligned = false;
+
 	$: {
 		// Changes to query mean we're misaligned
+		// TODO--don't start misaligned.
 		query;
 		misaligned = true;
 	}
-	function execute() {
-		plot_query = query;
-		misaligned = false;
-	}
+
+	misaligned = false;
 
 	let plot_query = query;
 
-	misaligned = false;
-</script>
+	function execute() {
+		plot_query = query;
+		misaligned = false;
+		console.log("plotting", query)
+		bookworm.plotAPI(plot_query)
+			.then(() => {
+			schema = bookworm.schemas[bookworm.query.host + '-' + bookworm.query.database]
+			metrics = bookworm.metrics;
+			})
+	}
 
+
+</script>
 <TopBar bind:query={query}></TopBar>
 
 <main>
-
 	<div class=query>
-		<div class="corpora">
-	{#each query.search_limits as limits, i}
-		<div class="corpus">
+		<Paper elevation=10>
+			<div class="corpora">
+				<Title> Create a corpus</Title>
+				{#if initial_load}
+					<Corpora bind:query={query} {schema} {bookworm} />
+				{/if}
+			</div>
+		</Paper>
 
-			{#if query.search_limits.length > 1}
-				<IconButton class="material-icons" on:click={() => remove_limit(i)}>delete</IconButton>
-			{/if}
-
-			<IconButton class="material-icons" on:click={() => clone_limit(i)}>add</IconButton>
-
-			<Corpus bind:limits={limits} schema={schema} {bookworm}></Corpus>
-
-		</div>
-	{/each}
+		<Paper elevation=10>
+			<div class="aesthetics">
+				<Title> Visual Representation </Title>
+				{#await bookworm.schema}
+					<Diamonds> </Diamonds>
+				{:then schema}
+					<Aesthetics bind:plottype={query.plottype} bind:aesthetic={query.aesthetic} {metrics} {schema} />
+				{/await}
+			</div>
+		</Paper>
 	</div>
-
-	<Button on:click={execute} color="primary" disabled={!misaligned}>Draw Chart</Button>
+	<div>
+	<Button variant="raised" style="width: 60%;" on:click={execute} color="primary" disabled={!misaligned}>Draw Chart</Button>
 	</div>
-	<div id="bookworm">
-		
-	</div>
-
+	<div id="bookworm" />
 </main>
-
 
 <style>
 
@@ -111,9 +121,7 @@
 		max-width: 240px;
 		margin: 0 auto;
 	}
-	div.corpus {
-    	display: flex;
-	}
+
 
 	@media (min-width: 640px) {
 		main {
@@ -125,5 +133,10 @@
 	}
 	div.corpora {
 		max-width:"60%";
+		min-width:"33%";
+	}
+	div.aesthetics {
+		max-width:"60%";
+		min-width:"33%";
 	}
 </style>
