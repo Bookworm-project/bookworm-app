@@ -1,15 +1,10 @@
 <script>
-import { query_selector_all } from "svelte/internal";
 
-
-import { dirty_components } from "svelte/internal";
-
-
-  import List, {Item, Separator, Text, PrimaryText, SecondaryText, Graphic} from '@smui/list';
-  import Button, {Group, GroupItem, Label, Icon} from '@smui/button';
-
-  import Menu from "@smui/menu";
-  import Select, {Option} from '@smui/select';
+  import List, {Item, Separator, Text, PrimaryText, SecondaryText, Graphic} from '@smui/list/bare.js';
+  import Button, {Group, GroupItem, Label, Icon} from '@smui/button/bare.js';
+  import Menu from "@smui/menu/bare.js";
+  import Select, {Option} from '@smui/select/bare.js';
+  import Slugmenu from "./Slugmenu.svelte";
   export let plottype;
   export let aesthetic;
   export let schema;
@@ -149,6 +144,7 @@ import { dirty_components } from "svelte/internal";
 
   $: dimensions = update_dimensions(plottype)
 
+
   </script>
 
   <Select label="Plot type" bind:value={plottype} >
@@ -161,11 +157,11 @@ import { dirty_components } from "svelte/internal";
 
 {#each possible_dimensions(plottype, aesthetic) as dim (dim.aes)}
   {#if dim.active}
-  <Select label={dim.aes} bind:value={aesthetic[dim.aes]} class="shaped-outlined" variant="outlined">
-      {#each possible_encoding_fields(dim, schema) as opt}
-        <Option invalid={opt.value == ""} value={opt.value}>{opt.label}</Option>
-      {/each}
-  </Select>
+    <Select label={dim.aes} bind:value={aesthetic[dim.aes]} class="shaped-outlined" variant="outlined">
+        {#each possible_encoding_fields(dim, schema) as opt}
+          <Option invalid={opt.value == ""} value={opt.value}>{opt.label}</Option>
+        {/each}
+    </Select>
   {/if}
 {/each}
 
@@ -178,5 +174,7 @@ div.aesthetics {
   display: flex;
   margin-top: 5px;
 }
-
+.mdc-select__selected-text {
+  min-width: 100px;
+}
 </style>

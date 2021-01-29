@@ -3,7 +3,7 @@
   export let schema;
   export let bookworm;
   import Corpus from "./Corpus.svelte";
-  import IconButton from '@smui/icon-button';
+  import IconButton from '@smui/icon-button/bare.js';
 
 	function clone_limit(i) {
 		const new_copy = JSON.parse(JSON.stringify(query.search_limits[i]))
@@ -20,6 +20,7 @@
     query.search_limits
     query = query;
   }
+
 
 </script>
 

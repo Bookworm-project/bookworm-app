@@ -4,8 +4,8 @@
 	import TopBar from './TopBar.svelte';
 	import Aesthetics from './Aesthetics.svelte';
 	import Corpora from './Corpora.svelte';
-	import Button from '@smui/button';
-	import Paper, {Title} from '@smui/paper';
+	import Button from '@smui/button/bare.js';
+	import Paper, {Title} from '@smui/paper/bare.js';
 	import { Diamonds } from 'svelte-loading-spinners';
 	export let query;
 

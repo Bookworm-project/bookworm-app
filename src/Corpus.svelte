@@ -4,19 +4,27 @@
    export let limits;
    export let schema;
    import CategoryFilter from "./CategoryFilter.svelte"
-   import IconButton from '@smui/icon-button';
-   import Textfield from '@smui/textfield';
-   import Paper, {Title, Subtitle} from '@smui/paper';
+   import IconButton from '@smui/icon-button/bare.js';
+   import Textfield from '@smui/textfield/bare.js';
 
+   import Paper, {Title, Subtitle} from '@smui/paper/bare.js';
+   import MenuSurface, { Anchor } from "@smui/menu-surface/bare.js";
 
-
-   export let expanded = false
    export let bookworm;
 
+   function label(q) {
+    const copy = JSON.parse(JSON.stringify(q))
+    copy.word = undefined;
+    const lab = bookworm.query_labeller([copy])[0]
+    return lab === "" ? "All texts" : lab
+  }
+
+
+   let menu;
    const expand = () => { 
-      expanded = !expanded 
+     menu.setOpen(true)
    }
-  
+   
    const all_limits = {}
 
    for (let {dbname} of schema) {
@@ -39,37 +47,32 @@
 <Textfield
    bind:value={all_limits.word[0]}
    label="term(s)"
-   style="min-width: 250px;"
+   style="min-width: 150px;"
 ></Textfield>
 
 <div class=filter>
+    <div class="slug">
+        <span class=mdc-typography--body1>
+            {label(limits)}
+        </span>
+    </div>
 <IconButton class="material-icons" on:click={expand}>filter_alt</IconButton>
-   <div class=filter-options class:hidden="{!expanded}">
-    <Paper color="info" elevation=10>
-        <Title>Limit by metadata</Title>
-
-        <Subtitle>
-            Categorical data only, for now.
-        </Subtitle>
+    <MenuSurface bind:this={menu} color="info" elevation=10>
+        <div style="min-width: 33vw; margin: 1em; display: flex; flex-direction: column; align-items: flex-start;">
+            <Title>Limit by metadata</Title>
         {#each schema as field}
             {#if field.type == "character"}
-            <CategoryFilter {bookworm} bind:array={all_limits[field.dbname]} field={field.name} />
+                <CategoryFilter {bookworm} bind:array={all_limits[field.dbname]} field={field.name} />
             {/if}
-        {/each}
-    </Paper>
-  </div>
+            {/each}
+        </div>
+    </MenuSurface>
 </div>
 
 <style>
+    div.slug {
+        max-width: 75px;
+    }
 
-div.filter-options {
-   position: absolute;
-   max-width: 50vw;
-   z-index: 99;
-}
-
-div.hidden {
-   display: none;
-}
 
 </style>
