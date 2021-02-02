@@ -3,8 +3,8 @@
   import Snackbar from '@smui/snackbar/bare.js'
   import TopAppBar, { Row, Section, Title } from "@smui/top-app-bar/bare.js";
   import Button, {Group, GroupItem, Label, Icon} from '@smui/button/bare.js';
-
-//  import { JSONEditor } from "svelte-jsoneditor";
+  import Dialog, {Content, Actions} from '@smui/dialog';
+  import { JSONEditor } from "svelte-jsoneditor";
 
   export let query;
   // export let metrics;
@@ -20,9 +20,23 @@
     navigator.clipboard.writeText(window.location.href)
     copy_alert.open()
   }
-
+  let editor;
   
 </script>
+
+<div>
+    <Dialog bind:this={editor} aria-labelledby="simple-title" aria-describedby="editor-content">
+      <!-- Title cannot contain leading whitespace due to mdc-typography-baseline-top() -->
+      <Title id="simple-title">Dialog Title</Title>
+      <Content id="simple-content">
+        Edit the underlying JSON. This shouldn't usually be necessary!
+      </Content>
+      <Actions>
+        <JSONEditor bind:json={query} />        
+      </Actions>
+    </Dialog>
+
+  </div>
 
 <TopAppBar variant="static" color="primary">
   <Row>
@@ -31,22 +45,10 @@
   </Section>
 
   <Section align="end" toolbar>
-    <Button on:click={() => formSurface.setOpen(true)}>
+    <Button on:click={() => {editor.open()}}>
         <Icon class="material-icons">code</Icon>
-    <Label>Edit Query</Label>
+        <Label>Edit Query</Label>
     </Button>
-    <MenuSurface bind:this={formSurface}>
-        <!--JSONEditor bind:json={query} /-->
-        <div
-        style="margin: 1em; display: flex; flex-direction: column; align-items: flex-end;"
-        >
-        <Button
-        style="margin-top: 1em;"
-        on:click={() => settingsPanel.setOpen(false)}
-        >Submit</Button
-        >
-        </div>
-        </MenuSurface>
     <Button on:click={() => settingsPanel.setOpen(true)}>
         <Icon
         class="material-icons"

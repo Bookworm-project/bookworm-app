@@ -1,10 +1,11 @@
 <script>
 
+
   import List, {Item, Separator, Text, PrimaryText, SecondaryText, Graphic} from '@smui/list/bare.js';
   import Button, {Group, GroupItem, Label, Icon} from '@smui/button/bare.js';
   import Menu from "@smui/menu/bare.js";
   import Select, {Option} from '@smui/select/bare.js';
-  import Slugmenu from "./Slugmenu.svelte";
+  import AestheticSelector from './AestheticSelector.svelte';
   export let plottype;
   export let aesthetic;
   export let schema;
@@ -82,6 +83,7 @@
   }
 
 
+  const selectors = {}
 
   const ptypes = [...Object.keys(definition)]
 
@@ -90,10 +92,10 @@
   function possible_dimensions(plottype, aesthetic) {
     let dims = [];
     for (let [aes, dtype] of Object.entries(definition[plottype].required)) {
-      dims.push({aes, dtype, active: true})
+      dims.push({aes, dtype, active: true, required: true})
     }
     for (let [aes, dtype] of Object.entries(definition[plottype].optional)) {
-      dims.push({aes, dtype, active: aesthetic[aes] !== undefined})
+      dims.push({aes, dtype, active: aesthetic[aes] !== undefined, required: false})
     }
     return dims
   }
@@ -142,9 +144,14 @@
       return dimensions
   }
 
+  let add_aes;
   $: dimensions = update_dimensions(plottype)
 
 
+  function set_aesthetic(key, value) {
+    aesthetic[key] = value;
+    aesthetic = aesthetic;
+  }
   </script>
 
   <Select label="Plot type" bind:value={plottype} >
@@ -153,17 +160,32 @@
     {/each}
   </Select>
 
+
 <div id=aesthetics>
 
 {#each possible_dimensions(plottype, aesthetic) as dim (dim.aes)}
   {#if dim.active}
-    <Select label={dim.aes} bind:value={aesthetic[dim.aes]} class="shaped-outlined" variant="outlined">
-        {#each possible_encoding_fields(dim, schema) as opt}
-          <Option invalid={opt.value == ""} value={opt.value}>{opt.label}</Option>
-        {/each}
-    </Select>
+    <AestheticSelector 
+        required={dim.required} 
+        possibilities={possible_encoding_fields(dim, schema)} 
+        bind:value={aesthetic[dim.aes]} 
+        title={dim.aes}>
+
+    </AestheticSelector>
   {/if}
 {/each}
+<div style="min-width: 100px;">
+  <Button on:click={() => add_aes.setOpen(true)}><Icon class="material-icons">add</Icon></Button>
+  <Menu bind:this={add_aes}>
+    <List>
+      {#each possible_dimensions(plottype, aesthetic) as dim (dim.aes)}
+        {#if !dim.active}
+          <Item on:SMUI:action={() => {dim.active = true; aesthetic[dim.aes] = "Search";}}><Text>{dim.aes}</Text></Item>
+        {/if}
+      {/each}
+    </List>
+  </Menu>
+</div>
 
 </div>
 

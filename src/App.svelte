@@ -50,12 +50,16 @@
 	export let bookworm = new Bookworm("#bookworm", query)
 
 	// wait for schema to be ready.
-	const first_draw = bookworm.schema.then(() => {
+
+	function first_draw_with_db() {
+		return bookworm.schema.then(() => {
 		initial_load = true
 		schema = bookworm.schemas[bookworm.query.host + '-' + bookworm.query.database]
 		metrics = bookworm.metrics;
 		bookworm.plotAPI(query)
-	})
+		})
+	}
+	let first_draw = first_draw_with_db()
 
 	let misaligned = false;
 
@@ -66,14 +70,18 @@
 		misaligned = true;
 	}
 
-	misaligned = false;
-
+	$: {
+		// If the database is changed, everything needs to be regenerated.
+		query.database;
+		query = query;
+		first_draw = first_draw_with_db()
+	}
 	let plot_query = query;
+
 
 	function execute() {
 		plot_query = query;
 		misaligned = false;
-		console.log("plotting", query)
 		bookworm.plotAPI(plot_query)
 			.then(() => {
 			schema = bookworm.schemas[bookworm.query.host + '-' + bookworm.query.database]
@@ -81,34 +89,45 @@
 			})
 	}
 
+	let show_visual = false;
+
+	function toggle_visual() {
+		show_visual = !show_visual
+	}
 
 </script>
+
 <TopBar bind:query={query}></TopBar>
 
 <main>
 	<div class=query>
-		<Paper elevation=10>
-			<div class="corpora">
-				<Title> Create a corpus</Title>
-				{#if initial_load}
-					<Corpora bind:query={query} {schema} {bookworm} />
-				{/if}
-			</div>
-		</Paper>
-
-		<Paper elevation=10>
-			<div class="aesthetics">
-				<Title> Visual Representation </Title>
-				{#await bookworm.schema}
-					<Diamonds> </Diamonds>
-				{:then schema}
-					<Aesthetics bind:plottype={query.plottype} bind:aesthetic={query.aesthetic} {metrics} {schema} />
-				{/await}
-			</div>
-		</Paper>
-	</div>
+		<div class=query-part>
+			<Paper elevation=10>
+				<div class="corpora">
+					<Title> Create a corpus</Title>
+					{#if initial_load}
+						<Corpora bind:query={query} {schema} {bookworm} />
+					{/if}
+				</div>
+			</Paper>
+		</div>
+		<div class=query-part>
+			<Paper elevation=10>
+				<div class="aesthetics">
+					<Title>Visual Representation<Button on:click={toggle_visual}>Edit</Button></Title>
+					<div class="aesthetics-edit" style="display:{show_visual ? 'inline': 'none'}">
+						{#await bookworm.schema}
+							<Diamonds> </Diamonds>
+						{:then schema}
+							<Aesthetics bind:plottype={query.plottype} bind:aesthetic={query.aesthetic} {metrics} {schema} />
+						{/await}
+						</div>
+				</div>
+			</Paper>
+		</div>
+	</div> <!--query-->
 	<div>
-	<Button variant="raised" style="width: 60%;" on:click={execute} color="primary" disabled={!misaligned}>Draw Chart</Button>
+		<Button variant="raised" style="width: 60%;" on:click={execute} color="primary" disabled={!misaligned}>Draw Chart</Button>
 	</div>
 	<div id="bookworm" />
 </main>
@@ -128,13 +147,22 @@
 			max-width: none;
 		}
 	}
+
+	div.query-part {
+		margin-left: 20px;
+		margin-top: 20px;
+	}
+
 	div.query {
 		display: flex;
+		flex-wrap: wrap;
 	}
+
 	div.corpora {
 		max-width:"60%";
 		min-width:"33%";
 	}
+
 	div.aesthetics {
 		max-width:"60%";
 		min-width:"33%";
