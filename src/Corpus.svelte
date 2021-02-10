@@ -1,16 +1,21 @@
 <script>
 // This allows the definition of a corpus that can be used as a 
 // single element for search_limits or compare_limits.
-   export let limits;
-   export let schema;
    import CategoryFilter from "./CategoryFilter.svelte"
    import IconButton from '@smui/icon-button/bare.js';
    import Textfield from '@smui/textfield/bare.js';
+   import { Title } from "@smui/paper/bare.js";
+   import MenuSurface from "@smui/menu-surface/bare.js";
 
-   import Paper, {Title, Subtitle} from '@smui/paper/bare.js';
-   import MenuSurface, { Anchor } from "@smui/menu-surface/bare.js";
+   import { createEventDispatcher } from 'svelte';
+   const dispatch = createEventDispatcher();
+   function requestRedraw() {
+      dispatch('bookworm', {"text": "Request Redraw"});
+    }
 
    export let bookworm;
+   export let limits;
+   export let schema;
 
    function label(q) {
     const copy = JSON.parse(JSON.stringify(q))
@@ -25,14 +30,15 @@
      menu.setOpen(true)
    }
    
-   const all_limits = {}
+   const all_limits = {...limits}
 
-   for (let {dbname} of schema) {
-    all_limits[dbname] = limits[dbname] || []
-   }
 
-   all_limits.word = limits.word || []
-
+    schema.then( (schema_entries) => {   
+     for (let {dbname} of schema_entries) {
+        all_limits[dbname] = limits[dbname] || []
+     }
+     all_limits.word = limits.word || []
+   })
 
    // Drop elements for which there are no defined limits.
    $: limits = Object.entries(all_limits)
@@ -42,10 +48,17 @@
         return obj;
       }, {});
 
+
+    function handleEnter(event) {
+		if (event.keyCode==13) {
+            requestRedraw()
+        }
+	}
 </script>
 
 <Textfield
    bind:value={all_limits.word[0]}
+   on:keyup={handleEnter}
    label="term(s)"
    style="min-width: 150px;"
 ></Textfield>
@@ -56,17 +69,21 @@
             {label(limits)}
         </span>
     </div>
+{#await schema}
+  ...
+{:then schema_entries}
 <IconButton class="material-icons" on:click={expand}>filter_alt</IconButton>
-    <MenuSurface bind:this={menu} color="info" elevation=10>
-        <div style="min-width: 33vw; margin: 1em; display: flex; flex-direction: column; align-items: flex-start;">
-            <Title>Limit by metadata</Title>
-        {#each schema as field}
-            {#if field.type == "character"}
-                <CategoryFilter {bookworm} bind:array={all_limits[field.dbname]} field={field.name} />
-            {/if}
-            {/each}
-        </div>
-    </MenuSurface>
+<MenuSurface bind:this={menu} color="info" elevation=10>
+    <div style="min-width: 33vw; margin: 1em; display: flex; flex-direction: column; align-items: flex-start;">
+        <Title>Limit by metadata</Title>
+        {#each schema_entries as field}
+        {#if field.type == "character"}
+            <CategoryFilter {bookworm} bind:array={all_limits[field.dbname]} field={field.name} />
+        {/if}
+        {/each}
+    </div>
+</MenuSurface>
+{/await}
 </div>
 
 <style>

@@ -30,7 +30,7 @@
     <IconButton class="material-icons" on:click={() => remove_limit(i)}>delete</IconButton>
   {/if}
   <IconButton class="material-icons" on:click={() => clone_limit(i)}>add</IconButton>
-  <Corpus bind:limits={limits} {schema} {bookworm}></Corpus>
+  <Corpus on:bookworm bind:limits={limits} {schema} {bookworm}></Corpus>
 </div>
 {/each}
 

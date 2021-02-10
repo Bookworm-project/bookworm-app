@@ -29,12 +29,12 @@
     "webpack-dev-server": "^3.11.2"
   },
   "scripts": {
-    "smui-css": "find node_modules/@smui -name 'bare.css' | xargs cat >  public/build/smui.css",
+    "smui-css": "find node_modules/@smui -name 'bare.css' | xargs cat >  public/build/smui2.css",
     "build": "npm run smui-css && cross-env NODE_ENV=production webpack",
     "dev": "webpack serve --content-base public --port 1500"
   },
   "dependencies": {
-    "bookworm-vega": "file:../../../Users/bschmidt/Dropbox/lib/bookworm-vega",
+    "bookworm-vega": "file:../bookworm-vega",
     "console-browserify": "^1.2.0",
     "svelte-jsoneditor": "^0.0.4"
   }
