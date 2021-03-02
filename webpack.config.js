@@ -66,7 +66,23 @@ module.exports = {
 				resolve: {
 					fullySpecified: false
 				}
-			}
+			},
+			{
+        test: /\.(glsl|frag|vert)$/,
+        exclude: /node_modules/,
+        include: /deepscatter/,
+        use: [
+          'raw-loader',
+          {
+            loader: 'glslify-loader',
+            options: {
+              transform: [
+                ['glslify-hex', { 'option-1': true, 'option-2': 42 }]
+              ]
+            }
+          }
+        ]
+      }
 		]
 	},
 	mode,

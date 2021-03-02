@@ -4,9 +4,20 @@
   import TopAppBar, { Row, Section, Title } from "@smui/top-app-bar/bare.js";
   import Button, {Label, Icon} from '@smui/button/bare.js';
   import Dialog, {Content, Actions} from '@smui/dialog/bare.js';
+  import Tab from '@smui/tab/bare.js';
+  import TabBar from '@smui/tab-bar/bare.js';
+	import { Diamonds } from 'svelte-loading-spinners';
+	import { slide, fly } from 'svelte/transition';
+
   import { JSONEditor } from "svelte-jsoneditor";
+  import Paper, {Title as PaperTitle} from '@smui/paper/bare.js';
+  import Corpora from './Corpora.svelte';
+	import Aesthetics from './Aesthetics.svelte';
+  import Radio from '@smui/radio';
+  import FormField from '@smui/form-field';
 
   export let query;
+  export let bookworm;
   // export let metrics;
   // export let schema;
 
@@ -14,34 +25,81 @@
   let formSurface;
   let settingsPanel;
   let copy_alert;
+  let collations = [
+    {"value": "Case_Insensitive",
+    "label": "Insensitive"},
+    {"value": "Case_Sensitive",
+    "label": "Sensitive"}
+  ]
+
+  function clone(query) {
+    return JSON.parse(JSON.stringify(query))
+  }
 
   function link() {
+    query = clone(query)
+    
+    if (query['host'].match(/localhost/)) {
+      bookworm.message({type: "warning", text: "Changing hostname to benschmidt.org"})
+      query['host'] = window.location.protocol + "//benschmidt.org"
+    }
+
     window.location.hash = encodeURI(JSON.stringify(query))
     navigator.clipboard.writeText(window.location.href)
     copy_alert.open()
   }
   let editor;
   
+
+  let  tabs =   [{
+      icon: "query",
+      label: "Design a query",
+      controls: "query"
+    },
+    {
+      icon: "chart",
+      label: "Design chart",
+      controls: "chart"
+    },
+    {
+      icon: "code",
+      label: "Edit code",
+      controls: "editor"
+    },
+    {
+      icon: "settings",
+      label: "Settings",
+      controls: "settings"
+    }
+  ]
+  let active_tab = tabs[0];
+  $: {
+    if (active_tab.controls === "editor") {
+      editor.open()
+    } 
+  }
 </script>
 
 <div>
 
-<Dialog bind:this={editor} aria-labelledby="simple-title" aria-describedby="simple-content">
-  <Title id="simple-title">Advanced editing</Title>
-  <Content id="simple-content">
-    Edit the API driving the visualization. This shouldn't usually be necessary!
-  </Content>
-  <Actions>
-    <JSONEditor bind:json={query} />        
-  </Actions>
-</Dialog>
 
 </div>
 
-<TopAppBar variant="static" color="primary">
+<TopAppBar variant="static" color="secondary">
   <Row>
   <Section>
     <Title>{query.database} Bookworm</Title>
+  </Section>
+
+  <Section>
+  <TabBar tabs={tabs} let:tab key={tab => tab.controls} bind:active={active_tab}>
+    <Tab {tab} stacked={true} indicatorSpanOnlyContent={true}
+         tabIndicator$transition="fade">
+      <Icon class="material-icons">{tab.icon}</Icon>
+
+      <Label>{tab.label}</Label>
+    </Tab>
+  </TabBar>
   </Section>
 
   <Section align="end" toolbar>
@@ -49,30 +107,7 @@
         <Icon class="material-icons">code</Icon>
         Edit Query
     </Button>
-    <Button on:click={() => settingsPanel.setOpen(true)}>
-        <Icon
-        class="material-icons"
-        >settings</Icon>
-        <Label>Settings</Label>
-    </Button>
-    <MenuSurface bind:this={settingsPanel}>
-        Case sensitivity:
-        <label>
-        <input
-        type="radio"
-        bind:group={query.words_collation}
-        value="Case_Sensitive"
-        />Case Sensitive
-        </label>
 
-        <label>
-        <input
-        type="radio"
-        bind:group={query.words_collation}
-        value="Case_Insensitive"
-        />Case Insensitive
-        </label>
-    </MenuSurface>
     <Button>
         <Icon class="material-icons" aria-label="Download data">file_download</Icon>
         <Label>Download</Label>
@@ -84,7 +119,77 @@
   </Section>
   </Row>
 </TopAppBar>
+<div class="query">
+  {#if active_tab.controls ==  "query"}
+  {#await bookworm.schema}
+
+      Waiting for information from server...<Diamonds />
+    {:then _}
+    <div class="corpora" transition:slide>
+      <Corpora on:bookworm bind:query={query} schema={bookworm.schema} bookworm={bookworm} />
+    </div>
+  {/await}
+  {/if}
+
+  {#if active_tab.controls == "chart"}
+        {#await bookworm.schema}
+          <Diamonds> </Diamonds>
+        {:then schema}
+          <div class="aesthetics" transition:slide>
+            <Aesthetics bind:plottype={query.plottype} bind:aesthetic={query.aesthetic} metrics={bookworm.metrics} {schema} />
+          </div>
+        {/await}
+  {/if}
+
+
+  {#if active_tab.controls == "settings"}
+    Case       
+    {#each collations as option}
+      <FormField>
+        <Radio bind:group={query.words_collation} value={option.value} />
+        <span slot="label">{option.label}</span>
+      </FormField>
+    {/each}
+
+
+  {/if}
+<Dialog bind:this={editor} aria-labelledby="simple-title" aria-describedby="simple-content">
+
+  <Paper elevation=10>
+    <Content id="simple-content">
+      Edit the API driving the visualization. This shouldn't usually be necessary!
+    </Content>
+    <JSONEditor bind:json={query} />   
+  </Paper>
+</Dialog>
+</div>
 
 <Snackbar primary bind:this={copy_alert}>
     <Label>Link copied</Label>
 </Snackbar>
+
+<style>
+
+
+	div.query-part {
+		margin-left: 20px;
+		margin-top: 20px;
+	}
+
+	div.query {
+		display: flex;
+    flex-wrap: wrap;
+    min-width:80vw;
+
+	}
+
+	div.corpora {
+		max-width:80%;
+    min-width:50%;
+	}
+
+	div.aesthetics {
+		max-width:80%;
+    min-width:50%;
+	}
+</style>
