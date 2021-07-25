@@ -1,7 +1,7 @@
 <script>
-  import Button, {Group, GroupItem, Label, Icon} from '@smui/button/bare.js';
-  import Menu from "@smui/menu/bare.js";
-  import List, {Item, Separator, Text, PrimaryText, SecondaryText, Graphic} from '@smui/list/bare.js';
+  import Button, {Group, GroupItem, Label, Icon} from '@smui/button';
+  import Menu from "@smui/menu";
+  import List, {Item, Separator, Text, PrimaryText, SecondaryText, Graphic} from '@smui/list';
 
   export let required;
   export let value;

@@ -1,25 +1,20 @@
 <script>
-  import MenuSurface, { Anchor } from "@smui/menu-surface/bare.js";
-  import Snackbar from '@smui/snackbar/bare.js'
-  import TopAppBar, { Row, Section, Title } from "@smui/top-app-bar/bare.js";
-  import Button, {Label, Icon} from '@smui/button/bare.js';
-  import Dialog, {Content, Actions} from '@smui/dialog/bare.js';
-  import Tab from '@smui/tab/bare.js';
-  import TabBar from '@smui/tab-bar/bare.js';
+  import TopAppBar, { Row, Section, Title } from "@smui/top-app-bar";
+  import Button, {Label, Icon} from '@smui/button';
+  import Dialog, {Content} from '@smui/dialog';
+  import Tab from '@smui/tab';
+  import TabBar from '@smui/tab-bar';
 	import { Diamonds } from 'svelte-loading-spinners';
 	import { slide, fly } from 'svelte/transition';
 
-  import { JSONEditor } from "svelte-jsoneditor";
-  import Paper, {Title as PaperTitle} from '@smui/paper/bare.js';
+//  import { JSONEditor } from "svelte-jsoneditor";
+  import Paper, {Title as PaperTitle} from '@smui/paper';
   import Corpora from './Corpora.svelte';
 	import Aesthetics from './Aesthetics.svelte';
   import Radio from '@smui/radio';
   import FormField from '@smui/form-field';
 
-  export let query;
-  export let bookworm;
-  // export let metrics;
-  // export let schema;
+  import { query, bookworm } from './stores.js'
 
   let menu;
   let formSurface;
@@ -37,14 +32,12 @@
   }
 
   function link() {
-    query = clone(query)
-    
-    if (query['host'].match(/localhost/)) {
-      bookworm.message({type: "warning", text: "Changing hostname to benschmidt.org"})
-      query['host'] = window.location.protocol + "//benschmidt.org"
+    if ($query['host'].match(/localhost/)) {
+      $bookworm.message({type: "warning", text: "Changing hostname to benschmidt.org"})
+      $query['host'] = window.location.protocol + "//benschmidt.org"
     }
 
-    window.location.hash = encodeURI(JSON.stringify(query))
+    window.location.hash = encodeURI(JSON.stringify($query))
     navigator.clipboard.writeText(window.location.href)
     copy_alert.open()
   }
@@ -52,12 +45,12 @@
   
 
   let  tabs =   [{
-      icon: "query",
+      icon: "search",
       label: "Design a query",
       controls: "query"
     },
     {
-      icon: "chart",
+      icon: "scatter",
       label: "Design chart",
       controls: "chart"
     },
@@ -73,37 +66,35 @@
     }
   ]
   let active_tab = tabs[0];
+  let dialog_open = false;
   $: {
     if (active_tab.controls === "editor") {
-      editor.open()
+      dialog_open = true;
     } 
   }
 </script>
 
 <div>
 
-
 </div>
 
 <TopAppBar variant="static" color="secondary">
   <Row>
   <Section>
-    <Title>{query.database} Bookworm</Title>
+    <Title>{$query.database } Bookworm</Title>
   </Section>
-
   <Section>
   <TabBar tabs={tabs} let:tab key={tab => tab.controls} bind:active={active_tab}>
     <Tab {tab} stacked={true} indicatorSpanOnlyContent={true}
          tabIndicator$transition="fade">
       <Icon class="material-icons">{tab.icon}</Icon>
-
       <Label>{tab.label}</Label>
     </Tab>
   </TabBar>
   </Section>
 
   <Section align="end" toolbar>
-    <Button on:click={() => {editor.open()}}>
+    <Button on:click={() => {dialog_open = true}}>
         <Icon class="material-icons">code</Icon>
         Edit Query
     </Button>
@@ -120,25 +111,26 @@
   </Row>
 </TopAppBar>
 <div class="query">
-  {#if active_tab.controls ==  "query"}
-  {#await bookworm.schema}
-
-      Waiting for information from server...<Diamonds />
-    {:then _}
-    <div class="corpora" transition:slide>
-      <Corpora on:bookworm bind:query={query} schema={bookworm.schema} bookworm={bookworm} />
-    </div>
-  {/await}
+  {#if $bookworm && active_tab.controls == "query"}
+  {#await $bookworm.schema}
+    Waiting for information from server...<Diamonds />
+  {:then unused }
+  <div class="corpora" transition:slide>
+    <Corpora on:bookworm />
+  </div>
+{/await}
   {/if}
 
-  {#if active_tab.controls == "chart"}
-        {#await bookworm.schema}
-          <Diamonds> </Diamonds>
-        {:then schema}
-          <div class="aesthetics" transition:slide>
-            <Aesthetics bind:plottype={query.plottype} bind:aesthetic={query.aesthetic} metrics={bookworm.metrics} {schema} />
-          </div>
-        {/await}
+  {#if $bookworm && active_tab.controls == "chart"}
+    {#await $bookworm.schema}
+      <Diamonds />
+    {:then schema}
+    <div class="aesthetics" transition:slide>
+      {#if $query.plottype}
+        <Aesthetics bind:plottype={$query.plottype} bind:aesthetic={$query.aesthetic} metrics={bookworm.metrics} />
+        {/if}
+    </div>
+    {/await}
   {/if}
 
 
@@ -146,30 +138,31 @@
     Case       
     {#each collations as option}
       <FormField>
-        <Radio bind:group={query.words_collation} value={option.value} />
+        <Radio bind:group={$query.words_collation} value={option.value} />
         <span slot="label">{option.label}</span>
       </FormField>
     {/each}
 
 
   {/if}
-<Dialog bind:this={editor} aria-labelledby="simple-title" aria-describedby="simple-content">
+<Dialog bind:this={editor} open={dialog_open} aria-labelledby="simple-title" aria-describedby="simple-content">
 
   <Paper elevation=10>
     <Content id="simple-content">
       Edit the API driving the visualization. This shouldn't usually be necessary!
     </Content>
-    <JSONEditor bind:json={query} />   
+<!--    <JSONEditor bind:json={query} />   -->
   </Paper>
 </Dialog>
 </div>
 
+<!--
 <Snackbar primary bind:this={copy_alert}>
     <Label>Link copied</Label>
 </Snackbar>
+-->
 
 <style>
-
 
 	div.query-part {
 		margin-left: 20px;

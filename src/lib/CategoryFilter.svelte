@@ -1,17 +1,12 @@
 <script>
   //import Multiselect from './Multiselect.svelte'
 
-  import Chip, {Set, Icon, Text} from '@smui/chips/bare.js';
-  import Button from '@smui/button/bare.js';
+  import Chip, {Set, LeadingIcon as Icon, Text} from '@smui/chips';
+  import Button from '@smui/button';
   import { slide } from 'svelte/transition';
-
+  import { bookworm } from './stores.js'
   export let array;
   export let field;
-  export let bookworm;
-  import List, {Item, Separator} from '@smui/list/bare.js';
-  import MenuSurface from '@smui/menu-surface/bare.js';
-
-  let val = "";
 
   let all_labels = [];
   let expanded = false;
@@ -20,7 +15,7 @@
     expanded = !expanded;
     //menu.setOpen(true)
     if (all_labels.length == 0) {
-        bookworm.category_labels(field)
+        $bookworm.category_labels(field)
         .then(d => {
             all_labels = d.map(d => d[field])
         })
